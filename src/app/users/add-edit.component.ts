@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
 
-import { UserService, AlertService } from '@app/_services';
+import { AlertService, UsuariosService } from '@app/_services';
 import { MustMatch } from '@app/_helpers';
 
 @Component({ templateUrl: 'add-edit.component.html' })
@@ -19,7 +19,7 @@ export class AddEditComponent implements OnInit {
         private formBuilder: FormBuilder,
         private route: ActivatedRoute,
         private router: Router,
-        private userService: UserService,
+        private usuariosService: UsuariosService,
         private alertService: AlertService
     ) {}
 
@@ -27,53 +27,49 @@ export class AddEditComponent implements OnInit {
         this.id = this.route.snapshot.params['id'];
         
         this.form = this.formBuilder.group({
-            title: ['', Validators.required],
-            firstName: ['', Validators.required],
-            lastName: ['', Validators.required],
+            nome: ['', Validators.required],
+            sobrenome: ['', Validators.required],
             email: ['', [Validators.required, Validators.email]],
-            role: ['', Validators.required],
-            // password and confirm password only required in add mode
-            password: ['', [Validators.minLength(6), ...(!this.id ? [Validators.required] : [])]],
-            confirmPassword: ['', [...(!this.id ? [Validators.required] : [])]]
+            permissao: ['', Validators.required],
+            senha: ['', [Validators.minLength(6), ...(!this.id ? [Validators.required] : [])]],
+            confirmarSenha: ['', [...(!this.id ? [Validators.required] : [])]]
         }, {
-            validators: MustMatch('password', 'confirmPassword')
+            validators: MustMatch('senha', 'confirmarSenha')
         });
 
-        this.title = 'Add User';
+        this.title = 'Adicionar Usuário';
         if (this.id) {
             // edit mode
-            this.title = 'Edit User';
+            this.title = 'Editar Usuário';
             this.loading = true;
-            this.userService.getById(this.id)
+            this.usuariosService.getById(this.id)
                 .pipe(first())
                 .subscribe(x => {
+                    console.log(x);
                     this.form.patchValue(x);
                     this.loading = false;
                 });
         }
     }
 
-    // convenience getter for easy access to form fields
     get f() { return this.form.controls; }
 
     onSubmit() {
         this.submitted = true;
 
-        // reset alerts on submit
         this.alertService.clear();
 
-        // stop here if form is invalid
         if (this.form.invalid) {
             return;
         }
 
         this.submitting = true;
-        this.saveUser()
+        this.salvarUsuario()
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.alertService.success('User saved', { keepAfterRouteChange: true });
-                    this.router.navigateByUrl('/users');
+                    this.alertService.success('Usuário Salvo', { keepAfterRouteChange: true });
+                    this.router.navigateByUrl('/usuarios');
                 },
                 error: error => {
                     this.alertService.error(error);
@@ -82,10 +78,9 @@ export class AddEditComponent implements OnInit {
             })
     }
 
-    private saveUser() {
-        // create or update user based on id param
+    private salvarUsuario() {
         return this.id
-            ? this.userService.update(this.id!, this.form.value)
-            : this.userService.create(this.form.value);
+            ? this.usuariosService.update(this.id!, this.form.value)
+            : this.usuariosService.create(this.form.value);
     }
 }
